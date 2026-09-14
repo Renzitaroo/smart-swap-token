@@ -127,7 +127,7 @@ export default function App() {
     setLogTab("history");
   }
 
-  // ---------- swap preview ----------
+  // ---------- swap preview & metrics ----------
   const previewOut = useMemo(() => {
     if (!amountIn || Number(amountIn) <= 0 || decA == null || decB == null) return "";
     try {
@@ -141,6 +141,22 @@ export default function App() {
       return "";
     }
   }, [amountIn, swapDir, reserveA, reserveB, decA, decB]);
+
+  const swapRate = useMemo(() => {
+    if (!reserveA || !reserveB || decA == null || decB == null || reserveA === 0n || reserveB === 0n) return null;
+    const rA = Number(formatUnits(reserveA, decA));
+    const rB = Number(formatUnits(reserveB, decB));
+    if (rA <= 0 || rB <= 0) return null;
+    return swapDir === "AtoB" ? rB / rA : rA / rB;
+  }, [reserveA, reserveB, decA, decB, swapDir]);
+
+  const priceImpact = useMemo(() => {
+    if (!amountIn || Number(amountIn) <= 0 || !reserveA || !reserveB || decA == null || decB == null) return 0;
+    const amt = Number(amountIn);
+    const rIn = swapDir === "AtoB" ? Number(formatUnits(reserveA, decA)) : Number(formatUnits(reserveB, decB));
+    if (rIn <= 0) return 0;
+    return (amt / (rIn + amt)) * 100;
+  }, [amountIn, reserveA, reserveB, decA, decB, swapDir]);
 
   // ---------- liquidity auto-pair ----------
   function onAddA(v: string) {
@@ -365,6 +381,29 @@ export default function App() {
                     {busy?.key === "swap" ? <><span className="spinner" />{busy.text}</> : actLabel || "Swap"}
                   </button>
                 </div>
+
+                {amountIn && Number(amountIn) > 0 && previewOut && (
+                  <div className="swap-breakdown">
+                    <div className="swap-breakdown-row">
+                      <span className="swap-breakdown-label">Nilai Tukar Pasar</span>
+                      <span className="swap-breakdown-val mono">1 {fromSym} ≈ {swapRate ? fmtNum(swapRate) : "-"} {toSym}</span>
+                    </div>
+                    <div className="swap-breakdown-row">
+                      <span className="swap-breakdown-label">Biaya Likuiditas (0.3% LP)</span>
+                      <span className="swap-breakdown-val mono">{fmtNum(Number(amountIn) * 0.003)} {fromSym}</span>
+                    </div>
+                    <div className="swap-breakdown-row">
+                      <span className="swap-breakdown-label">Estimasi Price Impact</span>
+                      <span className={`swap-breakdown-val mono ${priceImpact > 5 ? "impact-warn" : "impact-ok"}`}>
+                        {fmtNum(priceImpact)}% {priceImpact > 5 ? "⚠️ Tinggi" : "✓ Wajar"}
+                      </span>
+                    </div>
+                    <div className="swap-breakdown-row">
+                      <span className="swap-breakdown-label">Alur Transaksi</span>
+                      <span className="swap-breakdown-val mono">Approve (1x) ➔ Swap (On-Chain)</span>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : tab === "liquidity" ? (
               <div className="view">
@@ -396,6 +435,23 @@ export default function App() {
                         {busy?.key === "add" ? <><span className="spinner" />{busy.text}</> : actLabel || "Tambah Likuiditas"}
                       </button>
                     </div>
+
+                    <div className="swap-breakdown">
+                      <div className="swap-breakdown-row">
+                        <span className="swap-breakdown-label">Rasio Kolam Likuiditas</span>
+                        <span className="swap-breakdown-val mono">
+                          1 {symA} ≈ {reserveA > 0n && reserveB > 0n && decA != null && decB != null ? fmtNum(Number(formatUnits(reserveB, decB)) / Number(formatUnits(reserveA, decA))) : "-"} {symB}
+                        </span>
+                      </div>
+                      <div className="swap-breakdown-row">
+                        <span className="swap-breakdown-label">Imbal Hasil Penyedia Likuiditas</span>
+                        <span className="swap-breakdown-val mono">0.3% dari setiap volume swap</span>
+                      </div>
+                      <div className="swap-breakdown-row">
+                        <span className="swap-breakdown-label">Bukti Saham</span>
+                        <span className="swap-breakdown-val mono">Mencetak LP Shares ke dompet</span>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="view">
@@ -413,6 +469,19 @@ export default function App() {
                       <button className="act act--primary" disabled={!ready || busy?.key === "remove"} onClick={doRemoveLiquidity}>
                         {busy?.key === "remove" ? <><span className="spinner" />{busy.text}</> : actLabel || "Tarik Likuiditas"}
                       </button>
+                    </div>
+
+                    <div className="swap-breakdown">
+                      <div className="swap-breakdown-row">
+                        <span className="swap-breakdown-label">Mekanisme Penarikan</span>
+                        <span className="swap-breakdown-val mono">Burn Shares ➔ Terima Pokok + Akumulasi Fee</span>
+                      </div>
+                      <div className="swap-breakdown-row">
+                        <span className="swap-breakdown-label">Porsi Kepemilikan Pool Anda</span>
+                        <span className="swap-breakdown-val mono">
+                          {totalShares > 0n && myShares != null ? fmtNum((Number(myShares) / Number(totalShares)) * 100) : "0"}%
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}

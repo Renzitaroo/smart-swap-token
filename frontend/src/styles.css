@@ -1048,3 +1048,50 @@ body::before {
   background: #fff;
   color: #14263a;
 }
+
+/* ============================================================
+   Swap & Liquidity Feature Explanations Breakdown Card
+   ============================================================ */
+.swap-breakdown {
+  margin-top: 0.85rem;
+  padding: 0.8rem 1rem;
+  border-radius: 0.85rem;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  backdrop-filter: blur(8px);
+}
+.swap-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.swap-breakdown-label {
+  opacity: 0.75;
+  font-size: 0.78rem;
+}
+.swap-breakdown-val {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.impact-warn {
+  color: #f87171 !important;
+  font-weight: 700;
+}
+.impact-ok {
+  color: #34d399 !important;
+}
+:root[data-theme="light"] .swap-breakdown {
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+:root[data-theme="light"] .swap-breakdown-label {
+  color: rgba(15, 23, 42, 0.75);
+}
+:root[data-theme="light"] .swap-breakdown-val {
+  color: #0f172a;
+}
+
