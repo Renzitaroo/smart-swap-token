@@ -10,26 +10,38 @@ import { wagmiConfig } from "./wagmi";
 import Oracle from "./Oracle";
 
 const SEPOLIA = CONFIG.SEPOLIA_CHAIN_ID;
-const tokenA = { address: CONFIG.TOKEN_A.address, abi: ERC20_ABI };
-const tokenB = { address: CONFIG.TOKEN_B.address, abi: ERC20_ABI };
-const amm = { address: CONFIG.AMM_ADDRESS, abi: AMM_ABI };
+const tokenA = { address: CONFIG.TOKEN_A.address as `0x${string}`, abi: ERC20_ABI } as const;
+const tokenB = { address: CONFIG.TOKEN_B.address as `0x${string}`, abi: ERC20_ABI } as const;
+const amm = { address: CONFIG.AMM_ADDRESS as `0x${string}`, abi: AMM_ABI } as const;
 const HKEY = "ks_hist_v2_" + String(CONFIG.AMM_ADDRESS).toLowerCase();
 
-// ---------- helpers ----------
-function fmt(raw, dec) {
+// ---------- types & helpers ----------
+interface HistoryEntry {
+  type: "swap" | "add" | "remove";
+  hash: string;
+  ts: number;
+  aLogo: string;
+  aAmt: string;
+  aSym: string;
+  bLogo: string;
+  bAmt: string;
+  bSym: string;
+}
+
+function fmt(raw?: bigint | null, dec?: number | null): string {
   if (raw == null || dec == null) return "-";
   return Number(formatUnits(raw, dec)).toLocaleString("id-ID", { maximumFractionDigits: 2 });
 }
-function fmtNum(x) {
+function fmtNum(x: number | string): string {
   return Number(x).toLocaleString("id-ID", { maximumFractionDigits: 4 });
 }
 // rumus x*y=k + fee 0.3% (sama persis dengan contract getAmountOut)
-function getAmountOut(amountIn, reserveIn, reserveOut) {
+function getAmountOut(amountIn: bigint, reserveIn: bigint, reserveOut: bigint): bigint {
   if (amountIn <= 0n || reserveIn <= 0n || reserveOut <= 0n) return 0n;
   const inWithFee = amountIn * 997n;
   return (inWithFee * reserveOut) / (reserveIn * 1000n + inWithFee);
 }
-function loadHistory() {
+function loadHistory(): HistoryEntry[] {
   try {
     return JSON.parse(localStorage.getItem(HKEY) || "[]");
   } catch {
@@ -42,17 +54,17 @@ export default function App() {
   const chainId = useChainId();
   const chainOk = chainId === SEPOLIA;
 
-  const [tab, setTab] = useState("swap"); // swap | liquidity
-  const [liqSub, setLiqSub] = useState("add"); // add | remove
-  const [logTab, setLogTab] = useState("history"); // log | history
-  const [swapDir, setSwapDir] = useState("AtoB");
+  const [tab, setTab] = useState<"swap" | "liquidity" | "oracle">("swap");
+  const [liqSub, setLiqSub] = useState<"add" | "remove">("add");
+  const [logTab, setLogTab] = useState<"log" | "history">("history");
+  const [swapDir, setSwapDir] = useState<"AtoB" | "BtoA">("AtoB");
   const [amountIn, setAmountIn] = useState("");
   const [addA, setAddA] = useState("");
   const [addB, setAddB] = useState("");
   const [removeShares, setRemoveShares] = useState("");
-  const [busy, setBusy] = useState(null); // { key, text }
-  const [logLines, setLogLines] = useState([]);
-  const [history, setHistory] = useState(loadHistory);
+  const [busy, setBusy] = useState<{ key: string; text: string } | null>(null);
+  const [logLines, setLogLines] = useState<string[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
   const [theme, setTheme] = useState("dark");
 
   useEffect(() => {
@@ -74,9 +86,9 @@ export default function App() {
   });
   const user = useReadContracts({
     contracts: [
-      { ...tokenA, functionName: "balanceOf", args: [address] },
-      { ...tokenB, functionName: "balanceOf", args: [address] },
-      { ...amm, functionName: "shares", args: [address] },
+      { ...tokenA, functionName: "balanceOf", args: [address as `0x${string}`] },
+      { ...tokenB, functionName: "balanceOf", args: [address as `0x${string}`] },
+      { ...amm, functionName: "shares", args: [address as `0x${string}`] },
     ],
     query: { enabled: !!address },
   });
@@ -100,11 +112,11 @@ export default function App() {
     pool.refetch();
     user.refetch();
   }
-  function log(msg) {
+  function log(msg: string) {
     const t = new Date().toLocaleTimeString();
     setLogLines((prev) => [`[${t}] ${msg}`, ...prev].slice(0, 40));
   }
-  function pushHistory(entry) {
+  function pushHistory(entry: HistoryEntry) {
     setHistory((prev) => {
       const next = [entry, ...prev].slice(0, 50);
       try {
@@ -131,7 +143,7 @@ export default function App() {
   }, [amountIn, swapDir, reserveA, reserveB, decA, decB]);
 
   // ---------- liquidity auto-pair ----------
-  function onAddA(v) {
+  function onAddA(v: string) {
     setAddA(v);
     if (hasPool && v && Number(v) > 0 && decA != null && decB != null) {
       try {
@@ -141,7 +153,7 @@ export default function App() {
       } catch {}
     } else if (!v) setAddB("");
   }
-  function onAddB(v) {
+  function onAddB(v: string) {
     setAddB(v);
     if (hasPool && v && Number(v) > 0 && decA != null && decB != null) {
       try {
@@ -153,7 +165,13 @@ export default function App() {
   }
 
   // ---------- write flows ----------
-  async function ensureAllowance(token, amount, sym, setStep) {
+  async function ensureAllowance(
+    token: { address: `0x${string}`; abi: any },
+    amount: bigint,
+    sym: string,
+    setStep: (t: string) => void
+  ) {
+    if (!address) return;
     const cur = await readContract(wagmiConfig, {
       address: token.address,
       abi: ERC20_ABI,
@@ -177,6 +195,7 @@ export default function App() {
   async function doSwap() {
     if (!guard()) return;
     if (!amountIn || Number(amountIn) <= 0) return alert("Isi jumlah swap dulu.");
+    if (decA == null || decB == null) return alert("Menunggu data token...");
     const inSym = swapDir === "AtoB" ? symA : symB;
     const outSym = swapDir === "AtoB" ? symB : symA;
     const inDec = swapDir === "AtoB" ? decA : decB;
@@ -185,7 +204,7 @@ export default function App() {
     const rOut = swapDir === "AtoB" ? reserveB : reserveA;
     const token = swapDir === "AtoB" ? tokenA : tokenB;
     const amount = parseUnits(amountIn, inDec);
-    const setStep = (t) => setBusy({ key: "swap", text: t });
+    const setStep = (t: string) => setBusy({ key: "swap", text: t });
     setStep("...");
     try {
       await ensureAllowance(token, amount, inSym, setStep);
@@ -221,9 +240,10 @@ export default function App() {
   async function doAddLiquidity() {
     if (!guard()) return;
     if (!addA || !addB || Number(addA) <= 0 || Number(addB) <= 0) return alert("Isi jumlah A & B dulu.");
+    if (decA == null || decB == null) return alert("Menunggu data token...");
     const amtA = parseUnits(addA, decA);
     const amtB = parseUnits(addB, decB);
-    const setStep = (t) => setBusy({ key: "add", text: t });
+    const setStep = (t: string) => setBusy({ key: "add", text: t });
     setStep("...");
     try {
       await ensureAllowance(tokenA, amtA, symA, setStep);
@@ -253,7 +273,7 @@ export default function App() {
   async function doRemoveLiquidity() {
     if (!guard()) return;
     if (!removeShares || Number(removeShares) <= 0) return alert("Isi jumlah share dulu.");
-    const setStep = (t) => setBusy({ key: "remove", text: t });
+    const setStep = (t: string) => setBusy({ key: "remove", text: t });
     setStep("Konfirmasi tarik di MetaMask");
     try {
       log("Kirim removeLiquidity...");
@@ -464,8 +484,8 @@ function Row({ k, v }: { k: ReactNode; v: ReactNode }) {
     <div className="row"><span className="k">{k}</span><span className="v mono">{v}</span></div>
   );
 }
-function HistRow({ h }) {
-  const short = h.hash ? h.hash.slice(0, 6) + "…" + h.hash.slice(-4) : "";
+function HistRow({ h }: { h: HistoryEntry }) {
+  const shortHash = h.hash ? h.hash.slice(0, 6) + "…" + h.hash.slice(-4) : "";
   const url = h.hash ? "https://sepolia.etherscan.io/tx/" + h.hash : "#";
   const dt = h.ts ? new Date(h.ts) : null;
   const date = dt ? dt.toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
@@ -477,7 +497,7 @@ function HistRow({ h }) {
       <span className="hist-token"><img className="hist-logo" src={h.aLogo} alt="" /><span className="hist-amt">{h.aAmt} {h.aSym}</span></span>
       <span className="hist-arrow">{mid}</span>
       <span className="hist-token"><img className="hist-logo" src={h.bLogo} alt="" /><span className="hist-amt">{h.bAmt} {h.bSym}</span></span>
-      <span className="hist-via"><span className="hist-via-top">via <b>KampusSwap</b></span><span className="hist-sub2">{via}</span></span>
+      <span className="hist-via"><span className="hist-via-top">via <b>RENZIE TRADE</b></span><span className="hist-sub2">{via}</span></span>
       <a className="hist-date" href={url} target="_blank" rel="noopener noreferrer">
         <span className="hist-d">{date} ↗</span>
         <span className="hist-t">{time}</span>
@@ -488,11 +508,12 @@ function HistRow({ h }) {
 }
 
 // ---------- utils ----------
-function trim(s) {
+function trim(s: string): string {
   const n = Number(s);
   if (!isFinite(n)) return "";
   return String(Math.round(n * 1e6) / 1e6);
 }
-function short(e) {
+function short(e: any): string {
   return e?.shortMessage || e?.message || String(e);
 }
+

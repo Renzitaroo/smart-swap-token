@@ -1,29 +1,71 @@
-# Dependencies
-node_modules/
-
-# Secrets - JANGAN PERNAH di-commit
+# ==============================================================================
+# ZERO-LEAK SECURITY — JANGAN PERNAH COMMIT RAHASIA / CREDENTIALS
+# ==============================================================================
+# Environment variable files (kecuali file template .env.example)
 .env
 .env.*
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+
+# Kunci Privat, Sertifikat, & Keystore Web3
 *.key
 *.pem
-secrets.json
+*.p12
+*.pfx
+*.keystore
+keystore/
+id_rsa*
+id_ecdsa*
+id_ed25519*
 
-# Build / output
+# File Rahasia & Kredensial Dompet
+secrets.json
+secret.json
+credentials.json
+wallet.json
+wallets.json
+mnemonic.txt
+seed.txt
+private_key.txt
+*.secret
+*.credential
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+.pnp
+.pnp.js
+
+# Build / Output / Cache
 dist/
+frontend/dist/
 build/
 out/
 artifacts/
 cache/
+typechain/
+typechain-types/
+.next/
+.turbo/
 
-# Logs
+# Logs & Debug
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# OS junk
+# OS & Editor Junk
 .DS_Store
 Thumbs.db
-
-# Editor
+desktop.ini
 .vscode/
 .idea/
 *.swp
+*.swo
+*~
+

@@ -1,39 +1,41 @@
-// ============================================================
-// KONFIG KAMPUSSWAP  —  >>> MURID CUKUP EDIT FILE INI SAJA <<<
-//
-// Ganti alamat contract + logo token jadi punyamu sendiri.
-// Logo: taruh file gambar di folder "public/", lalu tulis path-nya
-// "/namafile.png" (awali garis miring) di "logo".
-// ============================================================
+/**
+ * RENZIE TRADE — Configuration File
+ * 
+ * Centralized on-chain configuration for Sepolia Testnet contracts and UI assets.
+ * Values can be configured via environment variables (VITE_*) or default fallback values.
+ */
 
 export const CONFIG = {
-  // Sepolia testnet.
+  // Sepolia testnet chain ID (11155111)
   SEPOLIA_CHAIN_ID: 11155111,
 
-  // RPC publik Sepolia -> dipakai buat BACA data pool tanpa perlu wallet.
-  RPC_URL: "https://ethereum-sepolia-rpc.publicnode.com",
+  // Sepolia Public RPC endpoint (used for gas-free on-chain read operations)
+  RPC_URL: (import.meta.env.VITE_SEPOLIA_RPC_URL as string) || "https://ethereum-sepolia-rpc.publicnode.com",
 
-  // WalletConnect projectId (buat RainbowKit). GRATIS: bikin di
-  // https://cloud.reown.com -> New Project -> copy Project ID.
-  // Kalau kosong, connect MetaMask masih jalan, tapi QR WalletConnect nggak.
-  WALLETCONNECT_PROJECT_ID: "GANTI_DENGAN_PROJECT_ID_KAMU",
+  // WalletConnect Project ID for RainbowKit (Reown Cloud). Optional for direct MetaMask injected connection.
+  WALLETCONNECT_PROJECT_ID: (import.meta.env.VITE_WALLETCONNECT_PROJECT_ID as string) || "c4f79cc821944d9680842e34466bfbd",
 
-  // Alamat pool AMM kamu (hasil deploy SimpleAMM di Remix).
-  AMM_ADDRESS: "0xe2418A85060977cBCD13E7ecc2e88E98A0428456",
+  // Deployed SimpleAMM Liquidity Pool contract address on Sepolia
+  AMM_ADDRESS: ((import.meta.env.VITE_AMM_ADDRESS as string) || "0xe2418A85060977cBCD13E7ecc2e88E98A0428456") as `0x${string}`,
 
-  // TOKEN A = KOIN KAMU (harus SAMA dengan tokenA di SimpleAMM).
+  // Token A: Renzie ETH (RZH)
   TOKEN_A: {
-    address: "0xf214e045E9D2249a5cD2feF26eE2D79263A1F1dd",
+    name: "Renzie ETH",
+    symbol: "RZH",
+    address: ((import.meta.env.VITE_TOKEN_A_ADDRESS as string) || "0xf214e045E9D2249a5cD2feF26eE2D79263A1F1dd") as `0x${string}`,
     logo: "/renzie-icon.svg",
   },
 
-  // TOKEN B = ETHJKT (token bersama dari pengajar).
+  // Token B: ETHJKT Token (ETHJKT)
   TOKEN_B: {
-    address: "0x7E96fed902B0A26b62DA78e8112253920Fc55936",
+    name: "ETHJKT Token",
+    symbol: "ETHJKT",
+    address: ((import.meta.env.VITE_TOKEN_B_ADDRESS as string) || "0x7E96fed902B0A26b62DA78e8112253920Fc55936") as `0x${string}`,
     logo: "/ethjkt-logo.png",
   },
 
-  // Branding header.
+  // UI Branding Assets
   BRAND_LOGO: "/renzie-icon.svg",
   TITLE_IMG: "/renzie-trade-logo.svg",
 };
+

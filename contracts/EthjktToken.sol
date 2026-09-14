@@ -1,33 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// ============================================================
-// ETHJKT TOKEN - "MATA UANG KAMPUS" BERSAMA (Hari 3)
-//
-// Kenapa butuh token kedua? Karena SWAP artinya "tukeran": kamu kasih
-// token A, dapet token B. Jadi butuh dua koin berbeda buat diadu.
-//
-// Bedanya sama TokenKu: ETHJKT ini token BERSAMA satu kelas. Anggap
-// aja "rupiah"-nya KampusSwap. Semua koin pribadi kalian (TokenKu)
-// nanti diadu lawan ETHJKT -> jadi harga tiap koin bisa dibandingin.
-// (Persis kayak di dunia nyata: hampir semua token dipasangin lawan
-// ETH atau stablecoin kayak USDC/IDRX.)
-//
-// PENTING: pengajar deploy SATU ETHJKT resmi, terus BAGIIN alamatnya
-// ke semua murid. Kalian NGGAK usah deploy ETHJKT sendiri -- cukup
-// pakai alamat dari pengajar, lalu panggil mint() buat dapet ETHJKT
-// gratis (buat modal isi pool + swap besok).
-// ============================================================
-
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+/**
+ * @title ETHJKT Token (ETHJKT)
+ * @author ETHJKT Community
+ * @notice ERC-20 token pair implementation for RENZIE TRADE AMM DEX platform.
+ * @dev Inherits OpenZeppelin ERC20 standard implementation.
+ *      Initial supply of 1,000,000 ETHJKT is minted to deployer address upon deployment.
+ *      Public mint() function is available for testnet faucet and liquidity testing.
+ */
 contract EthjktToken is ERC20 {
+    /**
+     * @notice Constructor initializing token name and symbol, and minting initial supply.
+     */
     constructor() ERC20("Ethjkt Token", "ETHJKT") {
         _mint(msg.sender, 1_000_000 * 10 ** decimals());
     }
 
-    // faucet terbuka (sama catatan keamanan kayak TokenKu): siapa pun
-    // boleh cetak ETHJKT buat latihan.
+    /**
+     * @notice Testnet Faucet Mint function.
+     * @dev Allows anyone to mint tokens on Sepolia testnet for pool testing & swap experiments.
+     * @param jumlah The amount of token units (in wei / 10**18) to mint to msg.sender.
+     */
     function mint(uint256 jumlah) external {
         _mint(msg.sender, jumlah);
     }

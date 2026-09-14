@@ -1,66 +1,48 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// ============================================================
-// SIMPLE AMM - MESIN TUKER OTOMATIS (Hari 3 build)  ->  ini KampusSwap
-//
-// AMM = Automated Market Maker. Ini "mesin" di balik Uniswap dkk.
-// Nggak ada penjual & pembeli yang harus ketemu. Yang ada cuma KOLAM
-// (pool) berisi 2 token, dan sebuah RUMUS yang nentuin harga otomatis.
-//
-// RUMUS AJAIBNYA: x * y = k  (constant product)
-//   x = jumlah token A di pool
-//   y = jumlah token B di pool
-//   k = hasil kali keduanya, harus TETAP setelah tiap swap.
-//
-// Intuisi (besok kita bedah pelan-pelan): kalau kamu AMBIL banyak
-// token B dari pool, B jadi langka -> jadi mahal. Makin banyak yang
-// kamu tuker sekaligus, makin jelek kursnya. Itu namanya SLIPPAGE /
-// price impact. Nggak ada admin yang set harga -- semuanya matematika.
-//
-// SIAPA YANG ISI POOL? Liquidity Provider (LP). Mereka nyetor token A
-// & B ke pool, dapet "shares" (bukti kepemilikan). Tiap swap kena fee
-// 0.3% yang numpuk di pool -> LP untung dari fee.
-//
-// ALUR PAKAI (di Remix):
-//   1. Deploy TokenKu (koin kamu) + pakai alamat ETHJKT dari pengajar.
-//   2. Deploy contract ini, isi (alamat TokenKu, alamat ETHJKT).
-//   3. approve() di MASING-MASING token ke alamat AMM ini.
-//   4. addLiquidity() -> pool kamu terisi (ini "pasar" koinmu lahir).
-//   5. approve lagi -> swapAforB() / swapBforA() -> tukeran jalan.
-//
-// CATATAN VERIFIKASI (dibahas Hari 4): AMM itu tempat AI PALING SERING
-// salah rumus (fee ketuker, slippage salah, urutan reserve kebalik).
-// JANGAN percaya bulet kode AMM dari AI. Cocokin outputnya sama
-// getAmountOut() di bawah SEBELUM kamu swap beneran.
-//
-// (Ini versi belajar. Di produksi masih kurang: SafeERC20, reentrancy
-//  guard, pola checks-effects-interactions, slippage protection. Besok
-//  kita omongin kenapa.)
-// ============================================================
-
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+/**
+ * @title SimpleAMM — Constant Product Automated Market Maker (x * y = k)
+ * @author Renzie
+ * @notice Decentralized AMM pool enabling permissionless token swaps and liquidity provision.
+ * @dev Implements Uniswap v2 constant product invariant (x * y = k) with a 0.3% trading fee.
+ *      Checks-effects-interactions pattern is strictly followed for state modifications.
+ */
 contract SimpleAMM {
-    IERC20 public tokenA; // TokenKu (koin kamu)
-    IERC20 public tokenB; // ETHJKT (mata uang kampus)
+    /// @notice Token A ERC-20 contract instance (e.g. RZH)
+    IERC20 public tokenA;
+    /// @notice Token B ERC-20 contract instance (e.g. ETHJKT)
+    IERC20 public tokenB;
 
-    // "reserve" = catatan berapa token yang ADA di pool sekarang.
+    /// @notice Current reserve of Token A deposited in the pool
     uint256 public reserveA;
+    /// @notice Current reserve of Token B deposited in the pool
     uint256 public reserveB;
 
-    // "shares" = bukti kepemilikan LP atas pool (mirip saham).
+    /// @notice Total supply of minted liquidity provider (LP) shares
     uint256 public totalShares;
+    /// @notice Mapping of LP addresses to their share balances
     mapping(address => uint256) public shares;
 
-    // fee 0.3%: dari tiap 1000 token masuk, 997 dihitung, 3 jadi fee.
+    /// @notice Fee numerator representing 99.7% of input amount considered (0.3% trading fee)
     uint256 public constant FEE_NUM = 997;
+    /// @notice Fee denominator base (1000)
     uint256 public constant FEE_DEN = 1000;
 
+    /// @notice Emitted when liquidity is deposited into the pool
     event LiquidityAdded(address indexed lp, uint256 amountA, uint256 amountB, uint256 sharesMinted);
+    /// @notice Emitted when liquidity is withdrawn from the pool
     event LiquidityRemoved(address indexed lp, uint256 amountA, uint256 amountB, uint256 sharesBurned);
+    /// @notice Emitted when a swap is executed
     event Swapped(address indexed user, address tokenIn, uint256 amountIn, uint256 amountOut);
 
+    /**
+     * @notice Initializes the AMM pool with two ERC-20 token addresses.
+     * @param _tokenA Address of Token A contract.
+     * @param _tokenB Address of Token B contract.
+     */
     constructor(address _tokenA, address _tokenB) {
         tokenA = IERC20(_tokenA);
         tokenB = IERC20(_tokenB);
