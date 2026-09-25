@@ -1,4 +1,4 @@
-# ⚡ RENZIE TRADE — Smart Swap Token & AMM DEX
+# ⚡ RENZIE TRADE — Smart Swap Token 
 
 <p align="center">
   <img src="frontend/public/renzie-trade-logo.svg" alt="RENZIE TRADE Logo" width="550" />
