@@ -36,9 +36,6 @@ function fmtNum(x: number) {
 function fmt2(x: number) {
   return Number(x).toLocaleString("id-ID", { maximumFractionDigits: 2 });
 }
-function short(addr: string) {
-  return addr.toLowerCase().slice(0, 6) + "…" + addr.toLowerCase().slice(-4);
-}
 
 export default function Oracle({
   reserveA,
@@ -224,7 +221,7 @@ export default function Oracle({
           <OCStat
             label="Deviasi oracle vs pool"
             value={`${dev >= 0 ? "+" : ""}${fmt2(dev)}%`}
-            note={dev === 0 ? "sama" : Math.abs(dev) > 1 ? "besar — peluang arbitrase" : "kecil — arb tipis"}
+            note={dev === 0 ? "sama" : Math.abs(dev) > 1 ? "besar - peluang arbitrase" : "kecil - arb tipis"}
           />
         </div>
 
@@ -233,7 +230,7 @@ export default function Oracle({
         <p className="oracle-hint">
           Chart = pergerakan harga pool (biru) vs oracle referensi (kuning). Oracle mock
           ini sengaja <b>mean-revert</b> ke harga pool (seperti feed Chainlink yang ditarik
-          arbitrase). Token kampus nggak punya feed Chainlink sungguhan — di produksi oracle
+          arbitrase). Token kampus tidak punya feed Chainlink sungguhan - di produksi oracle
           ini diganti data aggregator (mis. Chainlink / Pyth).
         </p>
       </section>
