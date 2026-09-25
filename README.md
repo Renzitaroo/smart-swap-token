@@ -4,8 +4,7 @@
   <img src="frontend/public/renzie-trade-logo.svg" alt="RENZIE TRADE Logo" width="550" />
 </p>
 
-<p align="center">
-  <b>Decentralized Exchange (DEX) berbasis Automated Market Maker (AMM) Constant Product Invariant Formula ($x \times y = k$) di jaringan Ethereum Sepolia Testnet.</b>
+
 </p>
 
 <p align="center">
